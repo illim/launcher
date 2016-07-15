@@ -1,0 +1,3 @@
+directory = "${user_home}/.freespectro"
+file = "${user_home}/.freespectro/index.toml"
+source = "https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxMDZKdjNRUHFmNlE"

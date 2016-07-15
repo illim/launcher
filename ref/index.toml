@@ -1,0 +1,30 @@
+[command]
+command = "java"
+args = ["-jar", "${user_home}/.freespectro/files/freespectrogdx.jar"]
+
+[[files]]
+name="original.zip"
+source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxYlphd2lRSzJXX1E"
+md5="910b0f873fb4875fc0a62b08ab2cf511"
+action="unzip"
+size=5894895
+
+[[files]]
+name="custom.zip"
+source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxWExZVEItSk5sN1U"
+md5="81021d9f32e4db45a06c8c78b355ca13"
+action="unzip"
+size=5922034
+
+[[files]]
+name="backgrounds.zip"
+source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxZ2tiLWlhMERvdlU"
+md5="53eb234546ef18d96c2874a7205958cc"
+action="unzip"
+size=1750136
+
+[[files]]
+name="freespectrogdx.jar"
+source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxQzZmWGp3WFEwYUk"
+md5="53eb234546ef18d96c2874a7205958cc"
+size=24831309
