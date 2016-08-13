@@ -1,0 +1,40 @@
+environment:
+  PATH: 'C:\msys64\mingw32\bin;C:\msys64\usr\bin\;%PATH%'
+  matrix:
+    - RUST_INSTALL_TOOLCHAIN: gnu
+      RUST_CHANNEL: stable
+
+platform:
+  - x86
+
+artifacts:
+  - path: target\launcher.zip
+    name: launcher
+
+#init:
+#- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))  
+
+install:
+  - ps: Start-FileDownload "http://static.rust-lang.org/dist/channel-rust-${env:RUST_CHANNEL}"
+  - ps: $env:RUST_INSTALLER = Select-String "i686-pc-windows-${env:RUST_INSTALL_TOOLCHAIN}.*exe" "channel-rust-${env:RUST_CHANNEL}" | select -exp line
+  - ps: Start-FileDownload "http://static.rust-lang.org/dist/${env:RUST_INSTALLER}"
+  - '%RUST_INSTALLER% /VERYSILENT /NORESTART /DIR="C:\Rust"'
+  - ps: $env:path = "C:\Rust\bin;" + $env:path
+  - bash -lc "pacman -S --noconfirm mingw-w64-i686-gcc mingw32/mingw-w64-i686-openssl"
+  - bash -lc "gcc --version"
+  - rustc --version --verbose
+  - cargo --version
+
+build_script:
+- cmd: >-
+    set MSYSTEM=MINGW32 && bash -c "cd c:/projects/launcher && cargo build --release"
+
+after_build:
+  - 7z a target\launcher.zip %APPVEYOR_BUILD_FOLDER%\target\release\launcher.exe
+  - 7z a target\launcher.zip C:\msys64\mingw32\bin\libeay32.dll
+  - 7z a target\launcher.zip C:\msys64\mingw32\bin\ssleay32.dll
+
+test: off
+
+#on_finish:
+#- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

@@ -15,8 +15,8 @@ pub struct IndexState {
   pub index : Index
 }
 
-pub fn execute_and_die(command : &CommandConfig) {
-  execute(command);
+pub fn execute_and_die(command : &CommandConfig) -> Result<()> {
+  try!(execute(command));
   process::exit(0);
 }
 
@@ -25,7 +25,7 @@ pub fn replace_index(index_config : &IndexConfig) {
   let tmp_path = Path::new(&tmpfile);
 
   if tmp_path.exists() {
-    fs::rename(tmp_path, Path::new(&index_config.file)).unwrap();
+    fs::rename(tmp_path, Path::new(&index_config.file)).expect("Failed rename index");
   }
 }
 
@@ -71,22 +71,28 @@ fn exists_diff(file : &FileConfig, current : &Index) -> bool {
   }
 }
 
-fn execute(config : &CommandConfig) {
+
+fn execute(config : &CommandConfig) -> Result<()> {
+  print!("Executing\n{}", &config.command);
+  for arg in &config.args {
+    print!(" {} ", arg);
+  }
+  println!("");
   process::Command::new(&config.command)
     .args(&config.args)
-    .spawn()
-    .expect("failed to execute process");
+    .spawn().map( |_| { () })
 }
 
+
 pub fn download<F>(source : &str, path_str : &str, expected_md5_opt : Option<&str>, update_progress : F) -> Result<u64>
-  where F : Fn(u64) {
+  where F : FnMut(u64) {
   let client = Client::new();
-  let mut res : hyper::client::Response = client.get(source).send().unwrap();
+  let mut res : hyper::client::Response = client.get(source).send().expect("Failed get http response");
   assert_eq!(res.status, hyper::Ok);
   let path = Path::new(&path_str);
   let path_tmp_str = path_str.to_string() + ".tmp";
   let path_tmp = Path::new(&path_tmp_str);
-  try!(fs::create_dir_all(path.parent().unwrap()));
+  try!(fs::create_dir_all(path.parent().expect("Failed Create parent dir")));
   let mut target = try!(File::create(path_tmp));
   let (length, md5) = try!(copy(&mut res, &mut target, update_progress));
   match expected_md5_opt {
@@ -99,8 +105,8 @@ pub fn download<F>(source : &str, path_str : &str, expected_md5_opt : Option<&st
   } 
 }
 
-fn copy<R: ?Sized, W: ?Sized, F>(reader: &mut R, writer: &mut W, update_progress : F) -> Result<(u64, String)>
-  where R: Read, W: Write, F : Fn(u64)
+fn copy<R: ?Sized, W: ?Sized, F>(reader: &mut R, writer: &mut W, mut update_progress : F) -> Result<(u64, String)>
+  where R: Read, W: Write, F : FnMut(u64)
 {
   let mut buf = [0; 2048];
   let mut written = 0;

@@ -5,8 +5,7 @@ authors = ["mdb"]
 
 [dependencies]
 hyper = "0.9.10"
-ui = { git = "https://github.com/mitchhentges/libui-rs", branch="control-send"}
 rustc-serialize = "0.3"
-toml = "0.1"
-zip = "0.1"
 rust-crypto = "0.2.36"
+toml = "0.1"
+zip = { version= "0.1", default-features = false }

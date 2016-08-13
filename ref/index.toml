@@ -1,18 +1,18 @@
 [command]
-command = "java"
-args = ["-jar", "${user_home}/.freespectro/files/freespectrogdx.jar"]
+command = "${user_home}/.freespectro/files/jre/bin/java"
+args = ["-jar", "${user_home}/.freespectro/files/85933af49500726315195bb3f03b638d-freespectrogdx.jar"]
 
 [[files]]
 name="original.zip"
 source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxYlphd2lRSzJXX1E"
-md5="910b0f873fb4875fc0a62b08ab2cf511"
+md5="0b838aee21937fe2c83ab524e934055c"
 action="unzip"
 size=5894895
 
 [[files]]
 name="custom.zip"
 source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxWExZVEItSk5sN1U"
-md5="81021d9f32e4db45a06c8c78b355ca13"
+md5="5de58e257de677ed5f8ec74f19b0cd80"
 action="unzip"
 size=5922034
 
@@ -26,5 +26,13 @@ size=1750136
 [[files]]
 name="freespectrogdx.jar"
 source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxQzZmWGp3WFEwYUk"
-md5="53eb234546ef18d96c2874a7205958cc"
+md5="85933af49500726315195bb3f03b638d"
 size=24831309
+
+[[files]]
+name="winjre.zip"
+source="https://drive.google.com/uc?export=download&id=0B4PwZlVw7EuxM3kySFFWVFd3eGc"
+md5="25f0d7badedfd038aae14832b8a9508f"
+action="unzip"
+os="windows"
+size=24534186
