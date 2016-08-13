@@ -1,6 +1,8 @@
 [command]
-command = "${user_home}/.freespectro/files/jre/bin/java"
+command = "java"
 args = ["-jar", "${user_home}/.freespectro/files/85933af49500726315195bb3f03b638d-freespectrogdx.jar"]
+[command.env]
+PATH = "${user_home}/.freespectro/files/jre/bin/"
 
 [[files]]
 name="original.zip"

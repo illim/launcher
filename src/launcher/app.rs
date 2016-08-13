@@ -78,8 +78,14 @@ fn execute(config : &CommandConfig) -> Result<()> {
     print!(" {} ", arg);
   }
   println!("");
-  process::Command::new(&config.command)
-    .args(&config.args)
+  let mut command = process::Command::new(&config.command);
+  if let &Some(ref env) = &config.env {
+    for (key, value) in env {
+      println!("env {} {}", &key, &value);
+      command.env(key, value);
+    }
+  }
+  command.args(&config.args)
     .spawn().map( |_| { () })
 }
 

@@ -7,5 +7,4 @@ addons:
     packages:
     - openssl
     - build-essential
-    - libev-dev
     - libssl-dev

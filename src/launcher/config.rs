@@ -8,12 +8,14 @@ use std::fs::File;
 use std::path::Path;
 use std::process;
 use std::env::consts::{ARCH, OS};
+use std::collections::HashMap;
 use rustc_serialize::Decodable;
 
 #[derive(RustcDecodable)]
 pub struct CommandConfig {
   pub command : String,
-  pub args    : Vec<String>
+  pub args    : Vec<String>,
+  pub env     : Option<HashMap<String, String>>
 }
 
 #[derive(RustcDecodable)]
@@ -104,7 +106,7 @@ fn deserialize_toml<T : Decodable>(text : &str) -> T {
   };
   match toml::decode(value) {
     Some(t) => t,
-    None => panic!("Error while deserializing")
+    None => panic!("Error while deserializing {}", &text)
   }
 }
 
