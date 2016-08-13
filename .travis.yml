@@ -1,0 +1,11 @@
+language: rust
+rust:
+  - stable
+
+addons:
+  apt:
+    packages:
+    - openssl
+    - build-essential
+    - libev-dev
+    - libssl-dev
