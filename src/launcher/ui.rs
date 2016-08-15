@@ -15,9 +15,7 @@ pub fn process_update(index_config : IndexConfig, index_state : IndexState) -> R
     None => files
   };
 
-  if let Err(err) = update_files(&index_config, &files_to_update) {
-    panic!("Err updating {}", err)
-  }
+  try!(update_files(&index_config, &files_to_update));
   app::replace_index(&index_config);
   app::execute_and_die(&command_config)
 }

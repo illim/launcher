@@ -93,12 +93,12 @@ fn execute(config : &CommandConfig) -> Result<()> {
 pub fn download<F>(source : &str, path_str : &str, expected_md5_opt : Option<&str>, update_progress : F) -> Result<u64>
   where F : FnMut(u64) {
   let client = Client::new();
-  let mut res : hyper::client::Response = client.get(source).send().expect("Failed get http response");
+  let mut res : hyper::client::Response = try!(to_io_result(client.get(source).send()));
   assert_eq!(res.status, hyper::Ok);
   let path = Path::new(&path_str);
   let path_tmp_str = path_str.to_string() + ".tmp";
   let path_tmp = Path::new(&path_tmp_str);
-  try!(fs::create_dir_all(path.parent().expect("Failed Create parent dir")));
+  try!(fs::create_dir_all(path.parent().expect("Failed to get parent")));
   let mut target = try!(File::create(path_tmp));
   let (length, md5) = try!(copy(&mut res, &mut target, update_progress));
   match expected_md5_opt {
@@ -109,6 +109,12 @@ pub fn download<F>(source : &str, path_str : &str, expected_md5_opt : Option<&st
       Ok(length)
     }
   } 
+}
+
+fn to_io_result<A>(hyper_result : hyper::error::Result<A>) -> Result<A> {
+  hyper_result.map_err(|e| {
+    Error::new(ErrorKind::Other, e.to_string())
+  })
 }
 
 fn copy<R: ?Sized, W: ?Sized, F>(reader: &mut R, writer: &mut W, mut update_progress : F) -> Result<(u64, String)>

@@ -30,9 +30,9 @@ fn main() {
 
 fn check_launch_result<A>(launch_result : std::io::Result<A>) {
   if let Err(e) = launch_result {
-      println!("Failed to launch {}", e);
-      let mut input = String::new();
-      let _ = std::io::stdin().read_line(&mut input);
+    println!("Failed to launch {}", e);
+    let mut input = String::new();
+    let _ = std::io::stdin().read_line(&mut input);
   }
 }
 
