@@ -82,7 +82,14 @@ fn execute(config : &CommandConfig) -> Result<()> {
   if let &Some(ref env) = &config.env {
     for (key, value) in env {
       println!("env {} {}", &key, &value);
-      command.env(key, value);
+      // hack
+      if key.contains("PATH") {
+        if Path::new(&value).exists() {
+          command.env(key, value);
+        }
+      } else {
+        command.env(key, value);
+      }
     }
   }
   command.args(&config.args)

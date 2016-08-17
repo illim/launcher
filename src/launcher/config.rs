@@ -31,7 +31,7 @@ impl IndexConfig {
   }
 }
 
-#[derive(RustcDecodable)]
+#[derive(RustcDecodable, Debug)]
 pub struct FileConfig {
   pub name   : String,
   pub md5    : String,
@@ -72,11 +72,7 @@ pub fn load_index_config() -> IndexConfig {
 pub fn load_index(index_config : &IndexConfig) -> Result<Option<Index>, io::Error> {
   if Path::new(&index_config.file).exists() {
     let index = try!(read_index(&index_config.file));
-    let index_filtered = Index {
-      files : index.files.into_iter().filter(|file| file.is_current_arch_os()).collect() , 
-      .. index
-    };
-    Ok(Some(index_filtered))
+    Ok(Some(index))
   } else {
     Ok(None)
   }
@@ -86,7 +82,12 @@ pub fn read_index(path : &str) -> Result<Index, io::Error> {
   let mut f = try!(File::open(path));
   let mut s = String::new();
   try!(f.read_to_string(&mut s));
-  Ok(deserialize_toml(&inject_vars(&s)))
+  let index : Index = deserialize_toml(&inject_vars(&s));
+  let index_filtered = Index {
+      files : index.files.into_iter().filter(|file| file.is_current_arch_os()).collect() , 
+      .. index
+    };
+  Ok(index_filtered)
 }
 
 
