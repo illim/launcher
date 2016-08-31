@@ -1,4 +1,7 @@
-pub mod ui;
+pub mod command;
 pub mod config;
-pub mod app;
+pub mod state;
+pub mod update;
 pub mod unzip;
+pub mod utils;
+pub mod error;

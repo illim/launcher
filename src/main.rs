@@ -2,37 +2,59 @@ extern crate rustc_serialize;
 extern crate hyper;
 extern crate zip;
 extern crate crypto;
+#[macro_use] extern crate log;
+extern crate env_logger;
 
 mod launcher;
 
-fn main() {
-  let index_config = launcher::config::load_index_config();
-  match launcher::app::get_index_state(&index_config) {
-    Err(_) => {
-      if let Ok(index_opt) = launcher::config::load_index(&index_config) {
-        if let Some(index) = index_opt {
-          check_launch_result(launcher::app::execute_and_die(&index.command));
-        }
-      }      
-    },
-    Ok(index_state) => {
-      if index_state.has_diffs() {
-        check_launch_result(launcher::ui::process_update(index_config, index_state));
-      } else {
-        println!("Everything is up to date.");
-        if let Some(index) = index_state.current {
-          check_launch_result(launcher::app::execute_and_die(&index.command));
-        }
-      }
-    }
-  }
-}
+use std::env;
+use launcher::error::*;
+use log::LogLevelFilter;
+use env_logger::LogBuilder;
 
-fn check_launch_result<A>(launch_result : std::io::Result<A>) {
-  if let Err(e) = launch_result {
-    println!("Failed to launch {}", e);
+fn main() {
+  init_logger();
+  if let Err(e) = run() {
+    error!("Failed to launch {}", e);
     let mut input = String::new();
     let _ = std::io::stdin().read_line(&mut input);
   }
 }
 
+fn run() -> BasicResult<()> {
+  let index_config = try!(launcher::config::load_index_config());
+  match launcher::state::get_index_state(&index_config) {
+    Err(err) => {
+      error!("Failed getting index caused by : {}", err);
+      if let Ok(index_opt) = launcher::config::load_index(&index_config) {
+        if let Some(index) = index_opt {
+          try!(index.command.execute_and_die());
+        }
+      }
+    },
+    Ok(index_state) => {
+      let command = if index_state.has_diffs() {
+        try!(launcher::update::process_update(&index_config, index_state))
+      } else {
+        info!("Everything is up to date.");
+        index_state.index.command
+      };
+      try!(command.execute_and_die());
+    }
+  }
+  Ok(())
+}
+
+
+fn init_logger() {
+  let mut builder = LogBuilder::new();
+
+  builder
+    .filter(None, LogLevelFilter::Info);
+
+  if env::var("RUST_LOG").is_ok() {
+    builder.parse(&env::var("RUST_LOG").unwrap());
+  }
+
+  builder.init().unwrap();
+}

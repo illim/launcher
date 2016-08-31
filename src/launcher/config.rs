@@ -1,22 +1,16 @@
 extern crate rustc_serialize;
 extern crate toml;
 
-use std::env;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
-use std::process;
 use std::env::consts::{ARCH, OS};
-use std::collections::HashMap;
+use std::fs;
 use rustc_serialize::Decodable;
-
-#[derive(RustcDecodable)]
-pub struct CommandConfig {
-  pub command : String,
-  pub args    : Vec<String>,
-  pub env     : Option<HashMap<String, String>>
-}
+use launcher::command::CommandConfig;
+use launcher::error::*;
+use launcher::utils;
 
 #[derive(RustcDecodable)]
 pub struct IndexConfig {
@@ -28,6 +22,16 @@ pub struct IndexConfig {
 impl IndexConfig {
   pub fn tmpfile(&self) -> String {
     self.file.to_owned() + ".tmp"
+  }
+
+  pub fn replace_index(&self) -> io::Result<()> {
+    let tmpfile  = self.tmpfile();
+    let tmp_path = Path::new(&tmpfile);
+
+    if tmp_path.exists() {
+      try!(fs::rename(tmp_path, Path::new(&self.file)));
+    }
+    Ok(())
   }
 }
 
@@ -64,12 +68,12 @@ pub struct Index {
 }
 
 
-pub fn load_index_config() -> IndexConfig {
+pub fn load_index_config() -> BasicResult<IndexConfig> {
   let str = include_str!("../../application.toml");
   deserialize_toml(&inject_vars(&str))
 }
 
-pub fn load_index(index_config : &IndexConfig) -> Result<Option<Index>, io::Error> {
+pub fn load_index(index_config : &IndexConfig) -> BasicResult<Option<Index>> {
   if Path::new(&index_config.file).exists() {
     let index = try!(read_index(&index_config.file));
     Ok(Some(index))
@@ -78,39 +82,34 @@ pub fn load_index(index_config : &IndexConfig) -> Result<Option<Index>, io::Erro
   }
 }
 
-pub fn read_index(path : &str) -> Result<Index, io::Error> {
+pub fn read_index(path : &str) -> BasicResult<Index> {
   let mut f = try!(File::open(path));
   let mut s = String::new();
   try!(f.read_to_string(&mut s));
-  let index : Index = deserialize_toml(&inject_vars(&s));
+  let index : Index = try!(deserialize_toml(&inject_vars(&s)));
   let index_filtered = Index {
-      files : index.files.into_iter().filter(|file| file.is_current_arch_os()).collect() , 
-      .. index
-    };
+    files : index.files.into_iter().filter(|file| file.is_current_arch_os()).collect() , 
+    .. index
+  };
   Ok(index_filtered)
 }
 
-
-fn get_home_dir() -> String {
-  let home_dir = env::home_dir().unwrap_or_else(|| {
-    println!("Impossible to get your home dir!");
-    process::exit(1);
-  });
-  format!("{}",home_dir.display()).replace("\\", "\\\\")
-}
-
-fn deserialize_toml<T : Decodable>(text : &str) -> T {
-  let table = toml::Parser::new(&text).parse();
+fn deserialize_toml<T : Decodable>(text : &str) -> BasicResult<T> {
+  let mut parser = toml::Parser::new(&text);
+  let table = parser.parse();
   let value = match table {
     Some(t) => toml::Value::Table(t),
-    None => panic!(format!("Error while parsing {}", &text))
+    None => return Err(From::from(BasicError {
+      description : format!("Error while parsing {}", &text),
+      errs : parser.errors.into_iter().map(|e| From::from(e)).collect()
+    }))
   };
   match toml::decode(value) {
-    Some(t) => t,
-    None => panic!("Error while deserializing {}", &text)
+    Some(t) => Ok(t),
+    None => Err(From::from(format!("Error while deserializing {}", &text)))
   }
 }
 
 fn inject_vars(text : &str) -> String {
-  text.replace("${user_home}", &get_home_dir())
+  text.replace("${user_home}", &utils::get_home_dir())
 }
