@@ -2,6 +2,7 @@
 use std::io::{Write, stderr, stdout};
 use std::path::Path;
 use std::cell::Cell;
+use std::fs;
 use launcher::config::{IndexConfig, FileConfig};
 use launcher::command::CommandConfig;
 use launcher::state::{self, IndexState};
@@ -12,19 +13,25 @@ use launcher::utils;
 pub fn process_update(index_config : &IndexConfig, index_state : IndexState) -> BasicResult<CommandConfig> {
   let command_config = index_state.index.command;
   let files = index_state.index.files;
-  let files_to_update = match index_state.current {
-    Some(current) => state::filter_diffs(files, &current),
-    None => files
+  let (files_to_update, files_to_delete) = match index_state.current {
+    Some(current) => {
+      let to_delete = state::get_outdated_files(index_config, &files, &current);
+      let to_update = state::filter_diffs(files, &current);
+      (to_update, to_delete)
+    },
+    None => (files, Vec::new())
   };
 
   try!(update_files(&index_config, &files_to_update));
   try!(index_config.replace_index());
+  try!(delete_outdated(files_to_delete));
+
   Ok(command_config)
 }
 
 fn update_files(index_config : &IndexConfig, files : &Vec<FileConfig>) -> BasicResult<()> {
   for (i, file) in files.iter().enumerate() {
-    let target_str = index_config.directory.to_owned() + "/files/" + &file.md5 + "-" + &file.name;
+    let target_str = index_config.relativize(&file);
     let target = Path::new(&target_str);
 
     if target.exists() {
@@ -69,4 +76,10 @@ fn exec_action(file : &FileConfig, path : &Path) -> BasicResult<()>{
   }
 }
 
-
+fn delete_outdated(files : Vec<String>) -> BasicResult<()> {
+  for file in files.iter() {
+    let path = Path::new(&file);
+    try!(fs::remove_file(path))
+  }
+  Ok(())
+}

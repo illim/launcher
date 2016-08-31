@@ -33,6 +33,10 @@ impl IndexConfig {
     }
     Ok(())
   }
+
+  pub fn relativize(&self, file : &FileConfig) -> String {
+    self.directory.to_owned() + "/files/" + &file.md5 + "-" + &file.name
+  }
 }
 
 #[derive(RustcDecodable, Debug)]

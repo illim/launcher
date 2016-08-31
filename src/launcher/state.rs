@@ -51,3 +51,15 @@ fn exists_diff(file : &FileConfig, current : &Index) -> bool {
   }
 }
 
+pub fn get_outdated_files(index_config: &IndexConfig, reffiles : &Vec<FileConfig>, current : &Index) -> Vec<String> {
+  current.files
+    .iter()
+    .filter_map(|ref file| {
+      if ! reffiles.iter().any(|f| f.name == file.name) {
+        Some(index_config.relativize(file))
+      } else {
+        None
+      }
+    })
+    .collect()
+}
