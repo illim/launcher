@@ -33,6 +33,8 @@ after_build:
   - 7z a target\launcher.zip %APPVEYOR_BUILD_FOLDER%\target\release\launcher.exe
   - 7z a target\launcher.zip C:\msys64\mingw32\bin\libeay32.dll
   - 7z a target\launcher.zip C:\msys64\mingw32\bin\ssleay32.dll
+  - 7z a target\launcher.zip C:\msys64\mingw32\bin\libgcc_s_dw2-1.dll
+  - 7z a target\launcher.zip C:\msys64\mingw32\bin\libwinpthread-1.dll
 
 test: off
 
