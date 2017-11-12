@@ -4,10 +4,12 @@ version = "0.1.0"
 authors = ["mdb"]
 
 [dependencies]
-hyper = "0.9.10"
-rustc-serialize = "0.3"
+reqwest = "0.8.1"
+serde = "1.0"
+serde_derive = "1.0"
 rust-crypto = "0.2.36"
-toml = "0.1"
+toml = "0.4"
 log = "0.3"
 env_logger = "0.3"
+error-chain = "0.11.0"
 zip = { version= "0.1", default-features = false }

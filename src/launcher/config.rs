@@ -1,4 +1,3 @@
-extern crate rustc_serialize;
 extern crate toml;
 
 use std::io;
@@ -7,12 +6,12 @@ use std::fs::File;
 use std::path::Path;
 use std::env::consts::{ARCH, OS};
 use std::fs;
-use rustc_serialize::Decodable;
 use launcher::command::CommandConfig;
-use launcher::error::*;
 use launcher::utils;
+use errors::*;
+use serde::Deserialize;
 
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 pub struct IndexConfig {
   pub directory : String,
   pub file      : String,
@@ -29,7 +28,7 @@ impl IndexConfig {
     let tmp_path = Path::new(&tmpfile);
 
     if tmp_path.exists() {
-      try!(fs::rename(tmp_path, Path::new(&self.file)));
+      fs::rename(tmp_path, Path::new(&self.file))?;
     }
     Ok(())
   }
@@ -39,7 +38,7 @@ impl IndexConfig {
   }
 }
 
-#[derive(RustcDecodable, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct FileConfig {
   pub name   : String,
   pub md5    : String,
@@ -65,32 +64,32 @@ impl FileConfig {
   }
 }
 
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 pub struct Index {
   pub command : CommandConfig,
   pub files   : Vec<FileConfig>
 }
 
 
-pub fn load_index_config() -> BasicResult<IndexConfig> {
+pub fn load_index_config() -> Result<IndexConfig> {
   let str = include_str!("../../application.toml");
   deserialize_toml(&inject_vars(&str))
 }
 
-pub fn load_index(index_config : &IndexConfig) -> BasicResult<Option<Index>> {
+pub fn load_index(index_config : &IndexConfig) -> Result<Option<Index>> {
   if Path::new(&index_config.file).exists() {
-    let index = try!(read_index(&index_config.file));
+    let index = read_index(&index_config.file)?;
     Ok(Some(index))
   } else {
     Ok(None)
   }
 }
 
-pub fn read_index(path : &str) -> BasicResult<Index> {
-  let mut f = try!(File::open(path));
+pub fn read_index(path : &str) -> Result<Index> {
+  let mut f = File::open(path)?;
   let mut s = String::new();
-  try!(f.read_to_string(&mut s));
-  let index : Index = try!(deserialize_toml(&inject_vars(&s)));
+  f.read_to_string(&mut s)?;
+  let index : Index = deserialize_toml(&inject_vars(&s))?;
   let index_filtered = Index {
     files : index.files.into_iter().filter(|file| file.is_current_arch_os()).collect() , 
     .. index
@@ -98,20 +97,11 @@ pub fn read_index(path : &str) -> BasicResult<Index> {
   Ok(index_filtered)
 }
 
-fn deserialize_toml<T : Decodable>(text : &str) -> BasicResult<T> {
-  let mut parser = toml::Parser::new(&text);
-  let table = parser.parse();
-  let value = match table {
-    Some(t) => toml::Value::Table(t),
-    None => return Err(From::from(BasicError {
-      description : format!("Error while parsing {}", &text),
-      errs : parser.errors.into_iter().map(|e| From::from(e)).collect()
-    }))
-  };
-  match toml::decode(value) {
-    Some(t) => Ok(t),
-    None => Err(From::from(format!("Error while deserializing {}", &text)))
-  }
+fn deserialize_toml<'de, T>(text : &'de str) -> Result<T>
+  where
+    T: Deserialize<'de> {
+  toml::from_str(text)
+    .chain_err(|| format!("Error while deserializing {}", &text))
 }
 
 fn inject_vars(text : &str) -> String {

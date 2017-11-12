@@ -3,7 +3,7 @@ use std::io;
 use std::process;
 use std::path::Path;
 
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 pub struct CommandConfig {
   pub command : String,
   pub args    : Vec<String>,
@@ -13,7 +13,7 @@ pub struct CommandConfig {
 impl CommandConfig {
 
   pub fn execute_and_die(&self) -> io::Result<()> {
-    try!(self.execute());
+    self.execute()?;
     process::exit(0);
   }
     
@@ -36,8 +36,10 @@ impl CommandConfig {
         }
       }
     }
-    command.args(&self.args)
-      .spawn().map( |_| { () })
+    command
+      .args(&self.args)
+      .spawn()
+      .map( |_| { () })
   }
 
 }

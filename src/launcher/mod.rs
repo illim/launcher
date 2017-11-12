@@ -4,4 +4,3 @@ pub mod state;
 pub mod update;
 pub mod unzip;
 pub mod utils;
-pub mod error;

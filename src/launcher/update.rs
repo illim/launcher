@@ -7,10 +7,10 @@ use launcher::config::{IndexConfig, FileConfig};
 use launcher::command::CommandConfig;
 use launcher::state::{self, IndexState};
 use launcher::unzip;
-use launcher::error::*;
 use launcher::utils;
+use errors::*;
 
-pub fn process_update(index_config : &IndexConfig, index_state : IndexState) -> BasicResult<CommandConfig> {
+pub fn process_update(index_config : &IndexConfig, index_state : IndexState) -> Result<CommandConfig> {
   let command_config = index_state.index.command;
   let files = index_state.index.files;
   let (files_to_update, files_to_delete) = match index_state.current {
@@ -22,20 +22,20 @@ pub fn process_update(index_config : &IndexConfig, index_state : IndexState) -> 
     None => (files, Vec::new())
   };
 
-  try!(update_files(&index_config, &files_to_update));
-  try!(index_config.replace_index());
-  try!(delete_outdated(files_to_delete));
+  update_files(&index_config, &files_to_update)?;
+  index_config.replace_index()?;
+  delete_outdated(files_to_delete)?;
 
   Ok(command_config)
 }
 
-fn update_files(index_config : &IndexConfig, files : &Vec<FileConfig>) -> BasicResult<()> {
+fn update_files(index_config : &IndexConfig, files : &Vec<FileConfig>) -> Result<()> {
   for (i, file) in files.iter().enumerate() {
     let target_str = index_config.relativize(&file);
     let target = Path::new(&target_str);
 
     if target.exists() {
-      try!(exec_action(&file, &target));
+      exec_action(&file, &target)?;
     } else {
       print!("[{}/{}] Downloading {} ", i + 1, files.len(), file.name);
       let _ = stdout().flush();
@@ -52,12 +52,12 @@ fn update_files(index_config : &IndexConfig, files : &Vec<FileConfig>) -> BasicR
       match download_result {
         Ok(_) => {
           println!(" Done");
-          try!(exec_action(&file, &target));
+          exec_action(&file, &target)?;
         },
         Err(e) => {
           let stderr = stderr();
           let mut err = stderr.lock();
-          try!(write!(err, "Failed download from {} : {}", file.source, e));
+          write!(err, "Failed download from {} : {}", file.source, e)?;
           return Err(e);
         }
       }
@@ -66,7 +66,7 @@ fn update_files(index_config : &IndexConfig, files : &Vec<FileConfig>) -> BasicR
   Ok(())
 }
 
-fn exec_action(file : &FileConfig, path : &Path) -> BasicResult<()>{
+fn exec_action(file : &FileConfig, path : &Path) -> Result<()>{
   match file.action {
     Some(ref action) if action == "unzip" => {
       println!("Unzipping {}", file.name);
@@ -76,10 +76,10 @@ fn exec_action(file : &FileConfig, path : &Path) -> BasicResult<()>{
   }
 }
 
-fn delete_outdated(files : Vec<String>) -> BasicResult<()> {
+fn delete_outdated(files : Vec<String>) -> Result<()> {
   for file in files.iter() {
     let path = Path::new(&file);
-    try!(fs::remove_file(path))
+    fs::remove_file(path)?
   }
   Ok(())
 }

@@ -1,7 +1,7 @@
-extern crate hyper;
+extern crate reqwest;
 
 use launcher::config::{self, IndexConfig, FileConfig, Index};
-use launcher::error::BasicResult;
+use errors::*;
 use launcher::utils;
 
 pub struct IndexState {
@@ -9,14 +9,14 @@ pub struct IndexState {
   pub index : Index
 }
 
-pub fn get_index_state(index_config : &IndexConfig) -> BasicResult<IndexState> {
+pub fn get_index_state(index_config : &IndexConfig) -> Result<IndexState> {
   let tmpfile= index_config.tmpfile();
 
-  try!(utils::download(&index_config.source, &tmpfile, None, |_| {} ));
+  utils::download(&index_config.source, &tmpfile, None, |_| {} )?;
   Ok(
     IndexState {
-      current : try!(config::load_index(index_config)),
-      index   : try!(config::read_index(&index_config.tmpfile()))
+      current : config::load_index(index_config)?,
+      index   : config::read_index(&index_config.tmpfile())?
     })
 }
 
@@ -39,7 +39,7 @@ pub fn filter_diffs(reffiles : Vec<FileConfig>, current : &Index) -> Vec<FileCon
   reffiles
     .into_iter()
     .filter(|file : &FileConfig| exists_diff(file, current))
-    .collect::<Vec<FileConfig>>()
+    .collect()
 }
 
 fn exists_diff(file : &FileConfig, current : &Index) -> bool {
